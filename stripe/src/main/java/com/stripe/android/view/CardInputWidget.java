@@ -23,6 +23,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 
 import com.stripe.android.R;
 import com.stripe.android.model.Card;
@@ -38,18 +39,18 @@ import java.util.Map;
  */
 public class CardInputWidget extends LinearLayout {
 
-    private static final String PEEK_TEXT_COMMON = "4242";
-    private static final String PEEK_TEXT_DINERS = "88";
-    private static final String PEEK_TEXT_AMEX = "34343";
+    private static final String PEEK_TEXT_COMMON = "XXXX";
+    private static final String PEEK_TEXT_DINERS = "XX";
+    private static final String PEEK_TEXT_AMEX = "XX";
 
     private static final String CVC_PLACEHOLDER_COMMON = "CVC";
-    private static final String CVC_PLACEHOLDER_AMEX = "2345";
+    private static final String CVC_PLACEHOLDER_AMEX = "XXXX";
 
     // These intentionally include a space at the end.
-    private static final String HIDDEN_TEXT_AMEX = "3434 343434 ";
-    private static final String HIDDEN_TEXT_COMMON = "4242 4242 4242 ";
+    private static final String HIDDEN_TEXT_AMEX = "XXXX XXXXXX ";
+    private static final String HIDDEN_TEXT_COMMON = "XXXX XXXX XXXX XXXX ";
 
-    private static final String FULL_SIZING_CARD_TEXT = "4242 4242 4242 4242";
+    private static final String FULL_SIZING_CARD_TEXT = "XXXX XXXX XXXX XXXX";
     private static final String FULL_SIZING_DATE_TEXT = "MM/YY";
 
     private static final String EXTRA_CARD_VIEWED = "extra_card_viewed";
@@ -78,7 +79,7 @@ public class CardInputWidget extends LinearLayout {
     private StripeEditText mCvcNumberEditText;
     private ExpiryDateEditText mExpiryDateEditText;
 
-    private FrameLayout mFrameLayout;
+    private RelativeLayout mFrameLayout;
 
     private @ColorInt int mErrorColorInt;
     private @ColorInt int mTintColorInt;
@@ -323,8 +324,8 @@ public class CardInputWidget extends LinearLayout {
     }
 
     private void setLayoutValues(int width, int margin, @NonNull StripeEditText editText) {
-        FrameLayout.LayoutParams layoutParams =
-                (FrameLayout.LayoutParams) editText.getLayoutParams();
+        RelativeLayout.LayoutParams layoutParams =
+                (RelativeLayout.LayoutParams) editText.getLayoutParams();
         layoutParams.width = width;
         layoutParams.leftMargin = margin;
         editText.setLayoutParams(layoutParams);
@@ -361,7 +362,7 @@ public class CardInputWidget extends LinearLayout {
 
         mCardNumberIsViewed = true;
 
-        mFrameLayout = (FrameLayout) findViewById(R.id.frame_container);
+        mFrameLayout = (RelativeLayout) findViewById(R.id.frame_container);
         mErrorColorInt = mCardNumberEditText.getDefaultErrorColorInt();
         mTintColorInt = mCardNumberEditText.getHintTextColors().getDefaultColor();
         if (attrs != null) {
@@ -384,33 +385,6 @@ public class CardInputWidget extends LinearLayout {
         mExpiryDateEditText.setErrorColor(mErrorColorInt);
         mCvcNumberEditText.setErrorColor(mErrorColorInt);
 
-        mCardNumberEditText.setOnFocusChangeListener(new OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (hasFocus) {
-                    scrollLeft();
-                }
-            }
-        });
-
-        mExpiryDateEditText.setOnFocusChangeListener(new OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (hasFocus) {
-                    scrollRight();
-                }
-            }
-        });
-
-        mCvcNumberEditText.setOnFocusChangeListener(new OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
-                if (hasFocus) {
-                    scrollRight();
-                }
-            }
-        });
-
         mExpiryDateEditText.setDeleteEmptyListener(
                 new CardInputWidget.BackUpFieldDeleteListener(mCardNumberEditText));
 
@@ -423,14 +397,6 @@ public class CardInputWidget extends LinearLayout {
                 updateIconCvc(mCardNumberEditText.getCardBrand(), hasFocus);
             }
         });
-
-        mCardNumberEditText.setCardNumberCompleteListener(
-                new CardNumberEditText.CardNumberCompleteListener() {
-                    @Override
-                    public void onCardNumberComplete() {
-                        scrollRight();
-                    }
-                });
 
         mCardNumberEditText.setCardBrandChangeListener(
                 new CardNumberEditText.CardBrandChangeListener() {
@@ -452,201 +418,11 @@ public class CardInputWidget extends LinearLayout {
         mCardNumberEditText.requestFocus();
     }
 
-    private void scrollLeft() {
-        if (mCardNumberIsViewed) {
-            return;
-        }
-
-        final int dateStartPosition =
-                mPlacementParameters.peekCardWidth + mPlacementParameters.cardDateSeparation;
-        final int cvcStartPosition =
-                dateStartPosition
-                        + mPlacementParameters.dateWidth + mPlacementParameters.dateCvcSeparation;
-
-        updateSpaceSizes(true);
-
-        final int startPoint = ((FrameLayout.LayoutParams)
-                mCardNumberEditText.getLayoutParams()).leftMargin;
-        Animation slideCardLeftAnimation = new Animation() {
-            @Override
-            protected void applyTransformation(float interpolatedTime, Transformation t) {
-                super.applyTransformation(interpolatedTime, t);
-                FrameLayout.LayoutParams params =
-                        (FrameLayout.LayoutParams) mCardNumberEditText.getLayoutParams();
-                params.leftMargin = (int) (startPoint * (1 - interpolatedTime));
-                mCardNumberEditText.setLayoutParams(params);
-            }
-        };
-
-        final int dateDestination =
-                mPlacementParameters.cardWidth + mPlacementParameters.cardDateSeparation;
-        Animation slideDateLeftAnimation = new Animation() {
-            @Override
-            protected void applyTransformation(float interpolatedTime, Transformation t) {
-                super.applyTransformation(interpolatedTime, t);
-                int tempValue =
-                        (int) (interpolatedTime * dateDestination
-                                + (1 - interpolatedTime) * dateStartPosition);
-                FrameLayout.LayoutParams params =
-                        (FrameLayout.LayoutParams) mExpiryDateEditText.getLayoutParams();
-                params.leftMargin = tempValue;
-                mExpiryDateEditText.setLayoutParams(params);
-            }
-        };
-
-        final int cvcDestination = cvcStartPosition + (dateDestination - dateStartPosition);
-        Animation slideCvcLeftAnimation = new Animation() {
-            @Override
-            protected void applyTransformation(float interpolatedTime, Transformation t) {
-                super.applyTransformation(interpolatedTime, t);
-                int tempValue =
-                        (int) (interpolatedTime * cvcDestination
-                                + (1 - interpolatedTime) * cvcStartPosition);
-                FrameLayout.LayoutParams params =
-                        (FrameLayout.LayoutParams) mCvcNumberEditText.getLayoutParams();
-                params.leftMargin = tempValue;
-                params.rightMargin = 0;
-                params.width = mPlacementParameters.cvcWidth;
-                mCvcNumberEditText.setLayoutParams(params);
-            }
-        };
-
-        slideCardLeftAnimation.setAnimationListener(new AnimationEndListener() {
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                mCardNumberEditText.requestFocus();
-            }
-        });
-
-        slideCardLeftAnimation.setDuration(ANIMATION_LENGTH);
-        slideDateLeftAnimation.setDuration(ANIMATION_LENGTH);
-        slideCvcLeftAnimation.setDuration(ANIMATION_LENGTH);
-
-        AnimationSet animationSet = new AnimationSet(true);
-        animationSet.addAnimation(slideCardLeftAnimation);
-        animationSet.addAnimation(slideDateLeftAnimation);
-        animationSet.addAnimation(slideCvcLeftAnimation);
-        mFrameLayout.startAnimation(animationSet);
-        mCardNumberIsViewed = true;
-    }
-
-    private void scrollRight() {
-        if (!mCardNumberIsViewed) {
-            return;
-        }
-
-        final int dateStartMargin = mPlacementParameters.cardWidth
-                + mPlacementParameters.cardDateSeparation;
-
-        updateSpaceSizes(false);
-
-        Animation slideCardRightAnimation = new Animation() {
-            @Override
-            protected void applyTransformation(float interpolatedTime, Transformation t) {
-                super.applyTransformation(interpolatedTime, t);
-                FrameLayout.LayoutParams cardParams =
-                        (FrameLayout.LayoutParams) mCardNumberEditText.getLayoutParams();
-                cardParams.leftMargin =
-                        (int) (-1 * mPlacementParameters.hiddenCardWidth * interpolatedTime);
-                mCardNumberEditText.setLayoutParams(cardParams);
-            }
-        };
-
-        final int dateDestination =
-                mPlacementParameters.peekCardWidth
-                + mPlacementParameters.cardDateSeparation;
-
-        Animation slideDateRightAnimation = new Animation() {
-            @Override
-            protected void applyTransformation(float interpolatedTime, Transformation t) {
-                super.applyTransformation(interpolatedTime, t);
-                int tempValue =
-                        (int) (interpolatedTime * dateDestination
-                                + (1 - interpolatedTime) * dateStartMargin);
-                FrameLayout.LayoutParams dateParams =
-                        (FrameLayout.LayoutParams) mExpiryDateEditText.getLayoutParams();
-                dateParams.leftMargin = tempValue;
-                mExpiryDateEditText.setLayoutParams(dateParams);
-            }
-        };
-
-        final int cvcDestination =
-                mPlacementParameters.peekCardWidth
-                + mPlacementParameters.cardDateSeparation
-                + mPlacementParameters.dateWidth
-                + mPlacementParameters.dateCvcSeparation;
-        final int cvcStartMargin = cvcDestination + (dateStartMargin - dateDestination);
-
-        Animation slideCvcRightAnimation = new Animation() {
-            @Override
-            protected void applyTransformation(float interpolatedTime, Transformation t) {
-                super.applyTransformation(interpolatedTime, t);
-                int tempValue =
-                        (int) (interpolatedTime * cvcDestination
-                                + (1 - interpolatedTime) * cvcStartMargin);
-                FrameLayout.LayoutParams cardParams =
-                        (FrameLayout.LayoutParams) mCvcNumberEditText.getLayoutParams();
-                cardParams.leftMargin = tempValue;
-                cardParams.rightMargin = 0;
-                cardParams.width = mPlacementParameters.cvcWidth;
-                mCvcNumberEditText.setLayoutParams(cardParams);
-            }
-        };
-
-        slideCardRightAnimation.setDuration(ANIMATION_LENGTH);
-        slideDateRightAnimation.setDuration(ANIMATION_LENGTH);
-        slideCvcRightAnimation.setDuration(ANIMATION_LENGTH);
-
-        slideCardRightAnimation.setAnimationListener(new AnimationEndListener() {
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                mExpiryDateEditText.requestFocus();
-            }
-        });
-
-        AnimationSet animationSet = new AnimationSet(true);
-        animationSet.addAnimation(slideCardRightAnimation);
-        animationSet.addAnimation(slideDateRightAnimation);
-        animationSet.addAnimation(slideCvcRightAnimation);
-
-        mFrameLayout.startAnimation(animationSet);
-        mCardNumberIsViewed = false;
-    }
-
     @Override
     public void onWindowFocusChanged(boolean hasWindowFocus) {
         super.onWindowFocusChanged(hasWindowFocus);
         if (hasWindowFocus) {
             applyTint(false);
-        }
-    }
-
-    @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        super.onLayout(changed, l, t, r, b);
-        if (!mInitFlag && getWidth() != 0) {
-            mInitFlag = true;
-            mTotalLengthInPixels = getFrameWidth();
-
-            updateSpaceSizes(mCardNumberIsViewed);
-
-            int cardLeftMargin = mCardNumberIsViewed
-                    ? 0 : -1 * mPlacementParameters.hiddenCardWidth;
-            setLayoutValues(mPlacementParameters.cardWidth, cardLeftMargin, mCardNumberEditText);
-
-
-            int dateMargin = mCardNumberIsViewed
-                    ? mPlacementParameters.cardWidth + mPlacementParameters.cardDateSeparation
-                    : mPlacementParameters.peekCardWidth + mPlacementParameters.cardDateSeparation;
-            setLayoutValues(mPlacementParameters.dateWidth, dateMargin, mExpiryDateEditText);
-
-            int cvcMargin = mCardNumberIsViewed
-                    ? mTotalLengthInPixels
-                    : mPlacementParameters.peekCardWidth
-                    + mPlacementParameters.cardDateSeparation
-                    + mPlacementParameters.dateWidth
-                    + mPlacementParameters.dateCvcSeparation;
-            setLayoutValues(mPlacementParameters.cvcWidth, cvcMargin, mCvcNumberEditText);
         }
     }
 
